@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Job Resume Builder</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; }
+    header { background: #1a73e8; color: white; padding: 20px 40px; }
+    header h1 { font-size: 1.6rem; }
+    header p { font-size: 0.9rem; opacity: 0.85; margin-top: 4px; }
+    .container { max-width: 900px; margin: 30px auto; padding: 0 20px; }
+    .card { background: white; border-radius: 10px; padding: 28px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    h2 { font-size: 1.1rem; margin-bottom: 16px; color: #1a73e8; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    label { font-size: 0.82rem; color: #555; display: block; margin-bottom: 4px; }
+    input, textarea { width: 100%; padding: 9px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; }
+    textarea { resize: vertical; min-height: 70px; }
+    .full { grid-column: 1 / -1; }
+    button { background: #1a73e8; color: white; border: none; padding: 12px 28px; border-radius: 6px; font-size: 1rem; cursor: pointer; margin-top: 8px; }
+    button:hover { background: #1558b0; }
+    button:disabled { background: #aaa; cursor: not-allowed; }
+    #status { margin-top: 12px; font-size: 0.9rem; color: #555; }
+    #skills-section, #resume-section { display: none; }
+    .skill-tag { display: inline-block; background: #e8f0fe; color: #1a73e8; border-radius: 20px; padding: 4px 12px; font-size: 0.8rem; margin: 3px; }
+    pre { white-space: pre-wrap; font-family: 'Segoe UI', sans-serif; font-size: 0.88rem; line-height: 1.6; background: #f8f9fa; padding: 20px; border-radius: 6px; border: 1px solid #e0e0e0; }
+    .market-info { font-size: 0.85rem; color: #555; background: #f8f9fa; padding: 14px; border-radius: 6px; white-space: pre-line; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Job Resume Builder Agent</h1>
+    <p>Crawls real job listings → analyzes market skills → generates your tailored resume with AI</p>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <h2>Job Target</h2>
+      <div class="grid">
+        <div>
+          <label>Job Title *</label>
+          <input id="job_title" placeholder="e.g. Python Developer" />
+        </div>
+        <div>
+          <label>Location (optional)</label>
+          <input id="location" placeholder="e.g. New York" />
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Your Background</h2>
+      <div class="grid">
+        <div>
+          <label>Full Name *</label>
+          <input id="name" placeholder="Samarth Singh" />
+        </div>
+        <div>
+          <label>Years of Experience</label>
+          <input id="experience" placeholder="3" />
+        </div>
+        <div>
+          <label>Current / Most Recent Role</label>
+          <input id="current_role" placeholder="Software Developer at XYZ" />
+        </div>
+        <div>
+          <label>Education</label>
+          <input id="education" placeholder="B.S. Computer Science, IIT Delhi" />
+        </div>
+        <div class="full">
+          <label>Key Projects</label>
+          <textarea id="projects" placeholder="Built a REST API with Flask; deployed ML model on AWS..."></textarea>
+        </div>
+        <div class="full">
+          <label>Anything else to highlight</label>
+          <textarea id="extra" placeholder="Open source contributions, certifications, languages..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <button id="generate-btn" onclick="generate()">Generate Resume</button>
+    <div id="status"></div>
+
+    <div class="card" id="skills-section" style="margin-top:24px;">
+      <h2>Market Insight</h2>
+      <div class="market-info" id="market-summary"></div>
+      <div style="margin-top:12px;" id="skill-tags"></div>
+    </div>
+
+    <div class="card" id="resume-section">
+      <h2>Your Tailored Resume</h2>
+      <pre id="resume-output"></pre>
+    </div>
+  </div>
+
+  <script>
+    async function generate() {
+      const btn = document.getElementById("generate-btn");
+      const status = document.getElementById("status");
+      btn.disabled = true;
+      status.textContent = "Crawling job listings and generating your resume... (this may take ~20 seconds)";
+
+      const payload = {
+        job_title: document.getElementById("job_title").value || "Software Engineer",
+        location: document.getElementById("location").value,
+        name: document.getElementById("name").value,
+        experience: document.getElementById("experience").value,
+        current_role: document.getElementById("current_role").value,
+        education: document.getElementById("education").value,
+        projects: document.getElementById("projects").value,
+        extra: document.getElementById("extra").value,
+      };
+
+      try {
+        const res = await fetch("/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+
+        document.getElementById("market-summary").textContent = data.market_summary;
+        const tagsEl = document.getElementById("skill-tags");
+        tagsEl.innerHTML = data.top_skills.map(s => `<span class="skill-tag">${s}</span>`).join("");
+        document.getElementById("resume-output").textContent = data.resume;
+
+        document.getElementById("skills-section").style.display = "block";
+        document.getElementById("resume-section").style.display = "block";
+        status.textContent = "Done!";
+      } catch (e) {
+        status.textContent = "Error: " + e.message;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
